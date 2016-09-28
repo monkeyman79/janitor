@@ -210,8 +210,8 @@ Apart from '${}' substitutions, backslash substitutions from extended-prompt app
 """
     __doc__ = __doc__ + gdb.prompt.prompt_help()
 
-    set_doc = "Set the extended value prompt."
-    show_doc = "Show the extended value prompt."
+    set_doc = "Set the advanced prompt."
+    show_doc = "Show the advanced prompt."
 
     def __init__(self):
         super(PromptParameter, self).__init__("janitor prompt",
@@ -221,15 +221,15 @@ Apart from '${}' substitutions, backslash substitutions from extended-prompt app
 
     def get_show_string(self, pvalue):
         if self.value is not '':
-            return "The extended value prompt is: " + self.value
+            return "The advanced prompt is: " + self.value
         else:
-            return "The extended value prompt is not set."
+            return "The advanced prompt is not set."
 
     def get_set_string(self):
         if self.value == '':
             if gdb.prompt_hook == self.before_prompt_hook:
                 gdb.prompt_hook = None;
-                return "Extended value prompt disabled."
+                return "Advanced prompt disabled."
             return "";
         
         if gdb.prompt_hook != self.before_prompt_hook:
@@ -238,9 +238,9 @@ Apart from '${}' substitutions, backslash substitutions from extended-prompt app
             gdb.prompt_hook = self.before_prompt_hook
             # Reset type cache on new objects
             Hooks.connect()
-            return "Extended value prompt enabled."
+            return "Advanced prompt enabled."
         
-        return "Extended value prompt set"
+        return "Advanced prompt set"
 
     def before_prompt_hook(self, current):
         if self.value is not '':
@@ -249,7 +249,7 @@ Apart from '${}' substitutions, backslash substitutions from extended-prompt app
             return None
 
 class EvaluatePromptCommand(gdb.Command):
-    """Evaluate extended value prompt without actually changing the prompt.
+    """Evaluate advanced prompt without actually changing the prompt.
 """
 
     __doc__ += PromptParameter.__doc__
@@ -507,10 +507,10 @@ class DisassembleNextInstrParameter(gdb.Parameter):
 
 class DumpCommand(gdb.Command):
     """Dump memory in low-level debugger style with colors
-Usage: janitor dump/fmt [start] [,end|,+length]
+Usage: janitor dump [/fmt] [start] [,end|,+length]
 
 The /fmt parameter is different from the one used in x or print command.
-There is no repeat count or format letter, instead if consists of size and endianness.
+There is no repeat count or format letter, instead it consists of size and endianness.
 Size letters are 1/b - byte, 2/h/s - 2 bytes, 4/d/l - 4 bytes, 8/g/q - 8 bytes, w - configured word size.
 Endianness letters are l - little endian, b - big endian.
 
@@ -586,7 +586,7 @@ Size of word can be configured with set `janitor word-size`."""
 
 class DumpStackCommand(gdb.Command):
     """Dump raw stack in low-level debugger style with colors.
-Usage: janitor raw-stack/fmt [+length]
+Usage: janitor raw-stack [/fmt] [+length]
 
 Displays stack correctly only on architectures where stack grows downward.
 See `janitor dump` command for description of /fmt.
@@ -759,7 +759,7 @@ DisassembleNextInstrParameter()
 
 # janitor dump
 DumpCommand()
-# set janitor dump-word-width
+# set janitor word-width
 DumpWordWidthParameter()
 # set janitor dump-line-align
 DumpLineAlignParameter()
