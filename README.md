@@ -91,7 +91,7 @@ If the `fmt` is not specified, format used in previous invocation will be used. 
 
 ##### `janitor raw-stack [/fmt] [+length]`
 ##### alias `jas`
-Dump stack memory, similar to `janitor dump $sp`. Word width configured with `set janitor word-width` is used, unless width is explicitly specified. It will try to highlight current stack frame in dumped bytes.
+Dump stack memory, similar to `janitor dump $sp`. Word width configured with `set janitor word-width` is used unless width is explicitly specified. It will try to highlight current stack frame in dumped bytes.
 
 ##### `set janitor word-width 2|4`
 ##### `show janitor word-width`
@@ -116,7 +116,7 @@ If this option is disabled, janitor doesn't use any ANSI terminal sequence in re
 Enables i8086 hack to disassemble by default starting at `$cs:$eip` instead or `$pc` and dump stack from `$ss:$esp` instead of `$sp`. This is useful when debugging real mode code e.g. running in QEMU. This should be somehow fixed in GDB, but that's completely different story.
 
 ## Advanced prompt substitution
-All substitutions are enclosed between `${` and `}`. Substitutions can be nested. Use backslash to escape characters from special interpretation: '\$', '\{', '\}', '\:'.
+All substitutions are enclosed between `${` and `}`. Substitutions can be nested. Use backslash to escape characters from special interpretation: `\$`, `\{`, `\}`, `\:`, `\#`, `\|`.
 
 ### Substitutions
 #### Frames, registers and variables
@@ -154,7 +154,7 @@ Value of GDB parameter
 
 #### ANSI SGI sequences
 ##### `${[SEQ}`
-If ANSI sequences are enabled, evaluates to ANSI escape sequence \e[SEQm, otherwise evaluates to empty string
+If ANSI sequences are enabled, evaluates to ANSI escape sequence `\e[SEQm`. Otherwise evaluates to empty string
 
 #### Expressions and conditionals
 ##### `${g:exp}`
@@ -207,7 +207,7 @@ Optional `string_conversion` specifier applies only to values of type gdb.Value.
 * `t`  -    Insert ANSI term sequences to produce result as displayed by `janitor dump` command
 
 ### Inherited from extended-prompt
-Apart from '${}' substitutions, backslash substitutions from extended-prompt apply:
+Apart from `${`  `}` substitutions, backslash substitutions from extended-prompt apply:
 
 *  `\[`    Begins a sequence of non-printing characters.
 *  `\\`    A backslash.
@@ -223,6 +223,6 @@ Apart from '${}' substitutions, backslash substitutions from extended-prompt app
   
 ### Examples
 
-`${?${fn}!=0:[${fn}]}` - expands to frame number enclosed in square brackets if selected frame is not top frame.
+`${?${fn}!=0:[${fn}]}` - Expands to frame number enclosed in square brackets if selected frame is not top frame.
 
-`${?${r:cs}==${nr:cs}:cs:${r:cs|%08X}}`  - expands to 'cs' if value of `cs` register in selected frame is the same as the register's value in top frame, otherwise it expands to value of cs register formated as hexadecimal number.
+`${?${r:cs}==${nr:cs}:cs:${r:cs|%08X}}`  - Expands to string **cs** if value of `cs` register in selected frame is the same as the register's value in top frame. Otherwise it expands to value of `cs` register formated as hexadecimal number.
