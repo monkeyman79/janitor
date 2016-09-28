@@ -194,13 +194,13 @@ Inside `{?subst:true:false}`, each of `true` and `false` can be followed by a fo
 (ie. terminating `|format` applies to `false` part only).
 To apply format to both parts, use `{:{?subst:true:false}|format}`.
 
-Use backslash to escape characters from special interpretation: '\$', '\{', '\}', '\:', '\$'.
+Use backslash to escape characters from special interpretation: '\$', '\{', '\}', '\:', `\|`, `\#`.
 
 Examples:
 
     ${?${f:num}!=0:[${f:num}]}              - expands to frame number enclosed in square brackets
                                               if selected frame is not top frame.
-    ${?${fr:cs}==${r:cs}:cs:${fr:cs|%08X}}  - expands to 'cs' if value of cs register in selected frame
+    ${?${r:cs}==${nr:cs}:cs:${r:cs|%08X}}  - expands to 'cs' if value of cs register in selected frame
                                               is the same as the register's value in top frame,
                                               otherwise it expands to value of cs formated as hexadecimal
                                               number.
