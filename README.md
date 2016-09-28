@@ -226,3 +226,7 @@ Apart from `${`  `}` substitutions, backslash substitutions from extended-prompt
 `${?${fn}!=0:[${fn}]}` - Expands to frame number enclosed in square brackets if selected frame is not top frame.
 
 `${?${r:cs}==${nr:cs}:cs:${r:cs|%08X}}`  - Expands to string **cs** if value of `cs` register in selected frame is the same as the register's value in top frame. Otherwise it expands to value of `cs` register formated as hexadecimal number.
+
+## Acknowlegements
+
+Layout of displayed registers and general colors arrangement has been almost verbatim copied from [GRDB Debugger by LADSoft](http://ladsoft.tripod.com/grdb_debugger.html).
