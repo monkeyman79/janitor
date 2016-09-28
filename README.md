@@ -21,6 +21,10 @@ source ~/git/janitor/.gdbinit
 
 * Modify `janitor.gdb` to your taste
 
+## Start
+
+To install aliases, enable all features and setup fancy prompt, just type start-janitor in gdb command line.
+
 ## Commands
 #### Quick list
     info janitor registers (alias jar)
