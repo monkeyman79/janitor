@@ -85,7 +85,7 @@ Endianness letters are
 * `l` - little endian
 * `b` - big endian.
 
-Order of size and endianness letter is not significant, `b` and `l` are interpreted as endianness letters only if accompanied with size letter.
+Order of size and endianness letters is not significant, `b` and `l` are interpreted as endianness letters only if accompanied with size letter.
 
 If the `fmt` is not specified, format used in previous invocation will be used. If `start` is not specified, dump will continue at the point where it was previously finished.
 
