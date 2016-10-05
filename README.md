@@ -1,5 +1,5 @@
 # janitor
-Collection of GDB commands useful for low-level debugging, aimed at bringing debug.exe flavor into GDB command line interface.
+Collection of GDB commands for low-level debugging, aimed at bringing debug.exe flavor into GDB command line interface.
 It includes advanced prompt substitution functionality.
 
 ## Screenshot
