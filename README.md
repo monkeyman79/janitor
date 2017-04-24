@@ -60,8 +60,8 @@ Display detailed `eflags` register contents.
 ##### `show janitor registers-save`
 If this option is enabled, registers which have changed in last execution step are highlighted.
 
-#### `set janitor registers-on-stop on|off`
-#### `show janitor registers-on-stop`
+##### `set janitor registers-on-stop on|off`
+##### `show janitor registers-on-stop`
 If this option is enabled, registers are displayed after each execution step.
 
 ### Disassemble
