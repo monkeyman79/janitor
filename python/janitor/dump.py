@@ -234,7 +234,7 @@ class Dump(DumpBase):
         while word_off < offset + length:
             self.append_word_start()
             word = []
-            word_range = xrange(0, width, 1) if endian == ENDIAN_BIG else xrange(width - 1, -1, -1)
+            word_range = range(0, width, 1) if endian == ENDIAN_BIG else range(width - 1, -1, -1)
             for idx in word_range:
                 if word_off + idx < offset or word_off + idx >= offset + length:
                     self.append_byte("  ", None)
@@ -318,7 +318,7 @@ class Dump(DumpBase):
             # Chars
             self.append_chars(bytes, start_off, bytes_to_read)
             
-            print self.termline.get_line()
+            print(self.termline.get_line())
             
             address += self.BYTES_PER_LINE
     

@@ -23,15 +23,23 @@ class DecorateArgs(object):
     STATE_ANNO = 7
     STATE_ANNO_IDEN = 8
     STATE_ANNO_NUMBER = 9
+    STATE_INSTR = 10
 
     # Must be all uppercase
-    keywords = { "BYTE", "SBYTE", "WORD", "SWORD", "DWORD", "SDWORD", "QWORD", "SQWORD", "REAL4", "REAL8", "FLOAT", "DOUBLE", "PTR", "OFFSET" }
+    I386_KEYWORDS = { "BYTE", "SBYTE", "WORD", "SWORD", "DWORD", "SDWORD", "QWORD", "SQWORD", 
+            "REAL4", "REAL8", "FLOAT", "DOUBLE", "PTR", "OFFSET" }
+    keywords = None
+
+    ARM_REGISTERS = { "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", 
+            "R8", "R9", "R10", "R11", "R12", "SP", "LR", "PC", "CPSR" }
+    registers = None
 
     state_colors = {
         STATE_NONE: term.COLOR_WHITE,
         STATE_REG: term.COLOR_CYAN | term.BOLD,
         STATE_CONST: term.COLOR_MAGENTA | term.BOLD,
         STATE_KEYWORD: term.COLOR_YELLOW,
+        STATE_INSTR: term.COLOR_YELLOW | term.BOLD,
         STATE_INDIRECT: term.COLOR_RED | term.BOLD,
         STATE_INDIRECT_REG: term.COLOR_RED,
         STATE_OFFSET: term.COLOR_GREEN,
@@ -41,8 +49,12 @@ class DecorateArgs(object):
     }
         
 
-    def __init__(self, flavor):
+    def __init__(self, arch_name, flavor):
         self.flavor = flavor
+        if arch_name == "i386" or arch_name == "i8086" or arch_name == "i386:x86-64":
+            self.keywords = self.I386_KEYWORDS
+        if arch_name == "arm":
+            self.registers = self.ARM_REGISTERS
     
     def new_state(self, state):
         if self.state == state:
@@ -173,13 +185,19 @@ class DecorateArgs(object):
                 ident = self.peek_identifier()
                 if not self.number and not self.identifier:
                     self.identifier = True
-                    if ident.upper() in self.keywords:
+                    if self.keywords is not None and ident.upper() in self.keywords:
                         # Keyword
                         self.new_state(self.STATE_KEYWORD)
                         if ident.upper() == "PTR":
                             self.ptr = True
                     elif self.state == self.STATE_INDIRECT or self.state == self.STATE_INDIRECT_REG:
                         self.new_state(self.STATE_INDIRECT_REG)
+                    elif self.registers is not None:
+                        if ident.upper() in self.registers:
+                            self.new_state(self.STATE_REG)
+                        else:
+                            # Assume keyword
+                            self.new_state(self.STATE_INSTR)
                     else:
                         # Assume register?
                         self.new_state(self.STATE_REG)
@@ -233,6 +251,7 @@ class Disassemble(janitor.dump.DumpBase):
     INSTR_COLOR = term.COLOR_YELLOW | term.BOLD
     
     BYTES_PER_LINE = 8
+    ARM_BYTES_PER_LINE = 4
     INSTR_WIDTH = 10
     ADDR_WIDTH = 8
     
@@ -263,21 +282,24 @@ class Disassemble(janitor.dump.DumpBase):
         self.termline.set_color(self.BYTES_COLOR)
         if length > 0: # Unlikely false
             self.termline.append("%02X" % ord(bytes[0]))
-        for byte in bytes[1 : self.BYTES_PER_LINE]:
+        for byte in bytes[1 : self.bytes_per_line]:
             self.termline.append(" %02X" % ord(byte))
         self.termline.reset()
         # padding
         if padding:
-            if length < self.BYTES_PER_LINE:
-                self.termline.append((self.BYTES_PER_LINE - length) * "   ")
+            if length < self.bytes_per_line:
+                self.termline.append((self.bytes_per_line - length) * "   ")
             self.termline.append(" ")
     
     def invoke(self, arch, start_addr, end_addr, flavor):
         self.termline = janitor.ansiterm.TermLine()
-        self.decorate_args = DecorateArgs(flavor)
+        self.decorate_args = DecorateArgs(arch.name(), flavor)
         self.address = start_addr
         self.current_pc = None
         self.selected_pc = None
+        self.bytes_per_line = self.BYTES_PER_LINE
+        if (arch.name() == "arm"):
+            self.bytes_per_line = self.ARM_BYTES_PER_LINE
         
         count = None
         if gdb.newest_frame().is_valid():
@@ -313,16 +335,13 @@ class Disassemble(janitor.dump.DumpBase):
             instr_bytes = gdb.selected_inferior().read_memory(self.address, instr_len)
             
             # First group of bytes
-            self.append_bytes(instr_bytes[0 : self.BYTES_PER_LINE], True)
+            self.append_bytes(instr_bytes[0 : self.bytes_per_line], True)
             
             # Separate instruction from arguments
-            instr_end = instr_asm.find(' ')
-            if instr_end == -1:
-                instr_args = None
-                instr_asm = instr_asm.strip()
-            else:
-                instr_args = instr_asm[instr_end:].strip()
-                instr_asm = instr_asm[:instr_end].strip()
+            #instr_end = instr_asm.find(' ')
+            instr_tmp = instr_asm.split(None, 1)
+            instr_asm = instr_tmp[0].strip()
+            instr_args = (None if len(instr_tmp) < 2 else instr_tmp[1].strip())
             
             instr_asm_len = len(instr_asm)
             
@@ -338,10 +357,10 @@ class Disassemble(janitor.dump.DumpBase):
                 self.decorate_args.invoke(instr_args, self.termline)
 
             # Display line
-            print self.termline.get_line()
+            print(self.termline.get_line())
 
             # More lines if something didn't fit
-            byte_ptr = self.BYTES_PER_LINE
+            byte_ptr = self.bytes_per_line
             while instr_len > byte_ptr or wrap_args:
                 
                 self.termline.start()
@@ -351,11 +370,11 @@ class Disassemble(janitor.dump.DumpBase):
                 
                 # Instruction bytes
                 if instr_len > byte_ptr:
-                    self.append_bytes(instr_bytes[byte_ptr : byte_ptr + self.BYTES_PER_LINE], wrap_args)
-                    byte_ptr += self.BYTES_PER_LINE
+                    self.append_bytes(instr_bytes[byte_ptr : byte_ptr + self.bytes_per_line], wrap_args)
+                    byte_ptr += self.bytes_per_line
                 else:
                     # no instruction bytes, just padding for arguments
-                    self.termline.append(self.BYTES_PER_LINE * "   ")
+                    self.termline.append(self.bytes_per_line * "   ")
                 
                 # Put arguments in second line
                 if wrap_args:
@@ -364,7 +383,7 @@ class Disassemble(janitor.dump.DumpBase):
                     wrap_args = False
                 
                 # Display line
-                print self.termline.get_line()
+                print(self.termline.get_line())
             
             # Adjust address
             self.address += instr["length"]

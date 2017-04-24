@@ -41,7 +41,7 @@ class Hooks(object):
                 if not frame.is_valid():
                     return
                 arch = frame.architecture().name()
-                if not janitor.registers.is_supported_arch(arch):
+                if janitor.registers.get_cpu_def(arch) is None:
                     return
                 janitor.registers.print_frame_regs(frame)
             except:
@@ -77,6 +77,7 @@ class Hooks(object):
             gdb.events.stop.connect(Hooks.stop_handler)
             gdb.events.exited.connect(Hooks.exited_handler)
             gdb.events.new_objfile.connect(Hooks.new_objfile_handler)
+        if hasattr(gdb.events, 'clear_objfiles'):
             gdb.events.clear_objfiles.connect(Hooks.clear_objfiles_handler)
         Hooks.hooks_set = True
 
@@ -86,6 +87,7 @@ class Hooks(object):
             gdb.events.stop.disconnect(Hooks.stop_handler)
             gdb.events.exited.disconnect(Hooks.exited_handler)
             gdb.events.new_objfile.disconnect(Hooks.new_objfile_handler)
+        if hasattr(gdb.events, 'clear_objfiles'):
             gdb.events.clear_objfiles.disconnect(Hooks.clear_objfiles_handler)
         Hooks.hooks_set = False
 
@@ -258,7 +260,7 @@ class EvaluatePromptCommand(gdb.Command):
         super(EvaluatePromptCommand, self).__init__("janitor eval",
                                                         gdb.COMMAND_SUPPORT)
     def invoke(self, arg_str, from_tty):
-        print janitor.prompt.substitute_value_prompt_str(arg_str)
+        print(janitor.prompt.substitute_value_prompt_str(arg_str))
         return
 
 
@@ -274,16 +276,16 @@ class InfoRegistersCommand(gdb.Command):
         try:
             frame = gdb.selected_frame()
         except gdb.error as e:
-            print "Cannot access selected frame: " + str(e)
+            print("Cannot access selected frame: " + str(e))
             return
 
         if not frame.is_valid():
-            print "Selected frame is not valid."
+            print("Selected frame is not valid.")
             return
 
         arch = frame.architecture().name()
-        if not janitor.registers.is_supported_arch(arch):
-            print "This command is supported only for i386 architecture."
+        if janitor.registers.get_cpu_def(arch) is None:
+            print("This command is supported only for i386 or arm architectures.")
             return
 
         janitor.registers.print_frame_regs(frame)
@@ -299,15 +301,15 @@ class InfoFlagsCommand(gdb.Command):
         try:
             frame = gdb.selected_frame()
         except gdb.error as e:
-            print "Cannot access selected frame: " + str(e)
+            print("Cannot access selected frame: " + str(e))
             return
         
         if not frame.is_valid():
             gdb.GdbError("Selected frame is not valid.");
 
         arch = frame.architecture().name()
-        if not janitor.registers.is_supported_arch(arch):
-            print "This command is supported only for i386 architecture."
+        if janitor.registers.get_cpu_def(arch) is None:
+            print("This command is supported only for i386 or arm architecture.")
             return
         
         janitor.registers.explain_frame_flags(frame)

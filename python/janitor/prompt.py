@@ -3,6 +3,7 @@
 
 import gdb
 import gdb.prompt
+import sys
 
 import janitor.typecache
 import janitor.dump
@@ -154,10 +155,18 @@ def to_string_or_error(value, expr):
         
     return to_string_or_report_error(value, expr)[1]
 
+def is_string_py3(value):
+    return type(value) is str or type(value) is bytes
+
+def is_string_py2(value):
+    return type(value) is str or type(value) is unicode
+
+is_string = (is_string_py3 if sys.version_info >= (3,0,0) else is_string_py2)
+
 def smart_bool(value):
     """Convert value to boolean. If it's string convertible to integer, convert it to integer first."""
     
-    if type(value) is str or type(value) is unicode:
+    if is_string(value):
         if (value == "False"):
             return False
         
@@ -175,14 +184,14 @@ def is_none_or_empty(value):
     """Returns true is value is None or empty string."""
     
     # GDB doesn't like comparing gdb.Value with ''
-    if type(value) is str or type(value) is unicode:
+    if is_string(value):
         return value == ''
     return value == None
 
 def maybe_number(value):
     """If value is a string representing number, try to convert it to numeric type."""
     
-    if (type(value) is str or type(value) is unicode) and len(value) != 0:
+    if is_string(value) and len(value) != 0:
         try:
             # Check if first character after optional +/- is digit or .
             test_ptr = 0

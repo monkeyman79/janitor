@@ -26,4 +26,10 @@ set janitor registers-save on
 set janitor registers-on-stop on
 set janitor disassemble-next-instr on
 
-set janitor prompt ${?${tn}:${[33}*${tn}${[} }${?${fn}>0:\#${fn} }${?${f}:${[36}${?${p:arch}=="i8086":${r:cs|%04X}\:${f:pc|%04X}:${f:pc|%08X}}:${[33}gdb}${[}-> 
+# python3 will moan if we compare ${fn} None to number
+# show: thread number, frame number (if not top frame) and pc (cs:ip on i8086)
+set janitor prompt \
+${?${tn}:${[33}*${tn}${[} }\
+${?${fn} and ${fn}>0:\#${fn} }\
+${?${f}:${[36}${?${p:arch}=="i8086":${r:cs|%04X}\:${f:pc|%04X}:${f:pc|%08X}}:\
+${[33}gdb}${[}-> 

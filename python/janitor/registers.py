@@ -22,6 +22,18 @@ VALUE_CHANGED_ATTR = term.HIGHLIGHT
 REG_LABEL_COLOR = term.COLOR_CYAN | term.BOLD
 REG_VALUE_COLOR = term.COLOR_MAGENTA | term.BOLD
 
+class CpuDef(object):
+    def __init__(self, regs, flags_reg, lines_list, flags_list, widest_register_type):
+        self.regs = regs
+        self.flags_reg = flags_reg
+        self.lines_list = lines_list
+        self.flags_list = flags_list
+        self.widest_register_type = widest_register_type
+
+#
+# i386
+#
+
 # flags & eflags:
 # ( mask, short_set, short_reset, long_name, group, set, reset )
 i386_flags_list = ( ( 0x800, "OV", "NV", "Overflow", "Status" ),
@@ -39,9 +51,10 @@ i386_eflags_list = ( ( 0x200000, "ID", "--", "CPUID Available", "System", "Avail
                ( 0x40000, "AC", "--", "Alignment Check", "System", "Enabled", "Disabled" ),
                ( 0x20000, "VM", "--", "Virtual 8086 Mode", "System", "Set", "Not set"),
                ( 0x4000, "NT", "--", "Nested Task", "System", "Set", "Not set" ) )
-    
+
+                
 # registers:
-# ( name, width, label, mask, shift )
+# ( name, width, label, mask, shift, [format | enum] )
 # ( name, flags_definition )
 # string_literal
 i386_first_line = ( ( "eax", 8 ), ( "ebx", 8 ), ( "ecx", 8 ), 
@@ -55,27 +68,66 @@ i386_third_line = ( ( "cs", 4 ), ( "ss", 4 ), ( "ds", 4 ), ( "es", 4 ), ( "fs", 
 
 i386_lines = ( i386_first_line, i386_second_line, i386_third_line )
 
-# list of all registers to save
 i386_registers = ( "eax", "ebx", "ecx", "edx", "esi", "edi", "eip", "esp", "ebp", "eflags", "cs", "ss", "ds", "fs", "gs" )
-
-# Just a stub object as there is only one known cpu
-class CpuDef(object):
-    def __init__(self, regs, flags_reg, lines_list, flags_list, widest_register_type):
-        self.regs = regs
-        self.flags_reg = flags_reg
-        self.lines_list = lines_list
-        self.flags_list = flags_list
-        self.widest_register_type = widest_register_type
 
 i386_def = CpuDef(i386_registers, "eflags", i386_lines, i386_eflags_list + i386_flags_list, "unsigned long")
 
-cpu_def = i386_def
+#
+# ARM
+#
+
+arm_flags_list = ( ( 0x80000000, "N", "n", "Negative", "Flag", "Negative", "Positive" ),
+                ( 0x40000000, "Z", "z", "Zero", "Flag", "Zero", "Not zero" ),
+                ( 0x20000000, "C", "c", "Carry", "Flag" ),
+                ( 0x10000000, "V", "v", "Overflow", "Flag" ),
+                ( 0x08000000, "Q", "q", "Sticky overflow", "Flag" ),
+                ( 0x01000000, "J", "j", "Jazelle", "Flag" ),
+                ( 0x0200, "E", "e", "Data Endianness", "Extension", "Little endian", "Big endian" ),
+                ( 0x0100, "A", "a", "Disable imprecise abort", "Extension" ),
+                ( 0x080, "I", "i", "Disable IRQ", "Control", "IRQs disabled", "IRQs enabled" ),
+                ( 0x040, "F", "f", "Disable FIQ", "Control", "FIQs disabled", "FIQs enabled" ),
+                ( 0x020, "T", "t", "Thumb", "Control" ) )
+                
+                
+arm_first_line = ( ( "r0", 8, "r0 " ), ( "r1", 8, "r1 " ), ( "r2", 8, "r2 " ),
+            ( "r3", 8, "r3 " ), ( "r4", 8, "r4 " ), ( "r5", 8, "r5 " ) )
+
+arm_second_line = ( ( "r6", 8, "r6 "), ( "r7", 8, "r7 " ), ( "r8", 8, "r8 " ),
+            ( "r9", 8, "r9 " ), ( "r10", 8, "r10" ), ( "r11", 8, "r11" ) )
+
+arm_third_line = ( ( "r12", 8, "r12" ), ( "sp", 8, "sp " ), ( "lr", 8, "lr " ),
+            ( "pc", 8, "pc " ), ( "cpsr", arm_flags_list ) )
+
+arm_modes = { 0b10000: 'User', 0b10001: 'FIQ', 0b10010: 'IRQ', 0b10011: 'Supervisor', 0b10111: 'Abort', 
+        0b11011: 'Undefined', 0b11111: 'System', 0b10110: 'Secure Monitor', None: 'Undefined' }
+
+arm_fourth_line = ( ( "cpsr", 8, "cpsr"), ( "cpsr", 5, "MODE", 0b11111, 0, arm_modes ), ( "cpsr", 4, "GE", 0b1111, 16, "b" ) )
+
+arm_lines = ( arm_first_line, arm_second_line, arm_third_line, arm_fourth_line )
+
+# list of all registers to save
+arm_registers = ( "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12",
+        "sp", "lr", "pc", "cpsr" )
+
+arm_def = CpuDef(arm_registers, "cpsr", arm_lines, arm_flags_list, "unsigned long")
 
 # previous registers value
 prev_registers = {}
 
 # current registers value
 curr_registers = {}
+
+#def is_supported_arch(arch):
+#    if arch != "i386" and arch != "i8086" and arch != "i386:x86-64":
+#        return False
+#    return True
+
+def get_cpu_def(arch):
+    if arch == "i386" or arch == "i8086" or arch == "i386:x86-64":
+    	return i386_def
+    if arch == "arm":
+    	return arm_def
+    return None
 
 def save_registers():
     global prev_registers, curr_registers
@@ -88,8 +140,9 @@ def save_registers():
     
     if not frame.is_valid():
         return
-    
-    if not is_supported_arch(arch):
+   
+    cpu_def = get_cpu_def(arch)
+    if cpu_def is None:
         return
     
     reg_list = cpu_def.regs
@@ -161,10 +214,15 @@ def explain_flags(value, prev_value, flags):
         
         termline.reset()
         
-        print termline.get_line()
+        print(termline.get_line())
         flag_num += 1
 
 def explain_frame_flags(frame):
+    arch = frame.architecture().name()
+    cpu_def = get_cpu_def(arch)
+    if cpu_def is None:
+        return
+    
     eflags = frame.read_register(cpu_def.flags_reg)
     if frame == gdb.newest_frame() and cpu_def.flags_reg in prev_registers:
         prev_eflags = prev_registers[cpu_def.flags_reg]
@@ -173,7 +231,7 @@ def explain_frame_flags(frame):
     explain_flags(eflags, prev_eflags, cpu_def.flags_list)
 
 
-def format_register(termline, label, width, value, prev_value):
+def format_register(termline, label, width, value, prev_value, fmt):
     termline.set_color(REG_LABEL_COLOR)
     termline.append(label)
     termline.reset()
@@ -182,7 +240,15 @@ def format_register(termline, label, width, value, prev_value):
     
     termline.set_color(REG_VALUE_COLOR)
     termline.set_attrib(VALUE_CHANGED_ATTR, prev_value != None and value != prev_value)
-    termline.append("%0*X" % (width, value))
+    if type(fmt) is dict:
+        if int(value) in fmt:
+            termline.append(fmt[int(value)])
+        else:
+            termline.append(fmt[None])
+    elif fmt == "b":
+        termline.append(format(int(value),'0'+str(width)+'b'))
+    else:
+        termline.append("%0*X" % (width, value))
     termline.reset()
 
 def format_register_flags(termline, value, prev_value, flags):
@@ -205,6 +271,11 @@ def format_register_flags(termline, value, prev_value, flags):
         flag_num += 1
 
 def print_frame_regs(frame):
+    arch = frame.architecture().name()
+    cpu_def = get_cpu_def(arch)
+    if cpu_def is None:
+        return
+    
     lines = cpu_def.lines_list
     line_count = len(lines)
     line_num = 0
@@ -257,28 +328,31 @@ def print_frame_regs(frame):
                 label = elem[2]
             else:
                 label = reg_name.upper()
-            
+           
+            # First shift, then mask, MMMKEY? 
+            # Shift
+            if elem_len > 4:
+                value >>= elem[4]
+                if prev_value != None:
+                    prev_value >>= elem[4]
+
             # Mask
             if elem_len > 3:
                 value &= elem[3]
                 if prev_value != None:
                     prev_value &= elem[3]
             
-            # Shift
-            if elem_len > 4:
-                value >>= elem[4]
-                if prev_value != None:
-                    prev_value &= elem[4]
-            
-            format_register(termline, label, width, value, prev_value)
+            # Optional binary format or enum set
+            if elem_len > 5:
+                fmt = elem[5]
+            else:
+                fmt = None
+
+            format_register(termline, label, width, value, prev_value, fmt)
             
             elem_num += 1
         
-        print termline.get_line()
+        print(termline.get_line())
         
         line_num += 1
 
-def is_supported_arch(arch):
-    if arch != "i386" and arch != "i8086" and arch != "i386:x86-64":
-        return False
-    return True
