@@ -152,7 +152,7 @@ Selected thread number
 ##### `${t:[attr]}`
 Selected thread attribute. Thread attribute can be one of: `is_valid`, `num`, `name`, `global_num`, `pid`, `lwpid`, `tid`, `is_stopped`, `is_running`, `is_exited`. Default is `is_valid`
 
-#### GDB paremeters
+#### GDB parameters
 ##### `${p:param}`
 Value of GDB parameter
 
