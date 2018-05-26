@@ -23,12 +23,13 @@ REG_LABEL_COLOR = term.COLOR_CYAN | term.BOLD
 REG_VALUE_COLOR = term.COLOR_MAGENTA | term.BOLD
 
 class CpuDef(object):
-    def __init__(self, regs, flags_reg, lines_list, flags_list, widest_register_type):
+    def __init__(self, regs, flags_reg, lines_list, flags_list, widest_register_type, flags_type):
         self.regs = regs
         self.flags_reg = flags_reg
         self.lines_list = lines_list
         self.flags_list = flags_list
         self.widest_register_type = widest_register_type
+        self.flags_type = flags_type
 
 #
 # i386
@@ -70,7 +71,7 @@ i386_lines = ( i386_first_line, i386_second_line, i386_third_line )
 
 i386_registers = ( "eax", "ebx", "ecx", "edx", "esi", "edi", "eip", "esp", "ebp", "eflags", "cs", "ss", "ds", "fs", "gs" )
 
-i386_def = CpuDef(i386_registers, "eflags", i386_lines, i386_eflags_list + i386_flags_list, "unsigned long")
+i386_def = CpuDef(i386_registers, "eflags", i386_lines, i386_eflags_list + i386_flags_list, "unsigned long", "unsigned long")
 
 #
 # ARM
@@ -109,7 +110,37 @@ arm_lines = ( arm_first_line, arm_second_line, arm_third_line, arm_fourth_line )
 arm_registers = ( "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12",
         "sp", "lr", "pc", "cpsr" )
 
-arm_def = CpuDef(arm_registers, "cpsr", arm_lines, arm_flags_list, "unsigned long")
+arm_def = CpuDef(arm_registers, "cpsr", arm_lines, arm_flags_list, "unsigned long", "unsigned long")
+
+#
+# ARM64
+#
+
+arm64_flags_list = ( ( 0x80000000, "N", "n", "Negative", "Flag", "Negative", "Positive" ),
+                ( 0x40000000, "Z", "z", "Zero", "Flag", "Zero", "Not zero" ),
+                ( 0x20000000, "C", "c", "Carry", "Flag" ),
+                ( 0x10000000, "V", "v", "Overflow", "Flag" ),
+                ( 0x0100, "A", "a", "Disable imprecise abort", "Extension" ),
+                ( 0x080, "I", "i", "Disable IRQ", "Control", "IRQs disabled", "IRQs enabled" ),
+                ( 0x040, "F", "f", "Disable FIQ", "Control", "FIQs disabled", "FIQs enabled" ) )
+                
+                
+arm64_lines = ( ( ( "x0", 16, "x0 " ), ( "x1", 16, "x1 " ), ( "x2", 16, "x2 " ), ( "x3", 16, "x3 " ) ),
+                ( ( "x4", 16, "x4 "), ( "x5", 16, "x5 " ), ( "x6", 16, "x6 " ), ( "x7", 16, "x7 " ) ),
+                ( ( "x8", 16, "x8 "), ( "x9", 16, "x9 " ), ( "x10", 16, "x10" ), ( "x11", 16, "x11" ) ),
+                ( ( "x12", 16, "x12"), ( "x13", 16, "x13" ), ( "x14", 16, "x14" ), ( "x15", 16, "x15" ) ),
+                ( ( "x16", 16, "x16"), ( "x17", 16, "x17" ), ( "x18", 16, "x18" ), ( "x19", 16, "x19" ) ),
+                ( ( "x20", 16, "x20"), ( "x21", 16, "x21" ), ( "x22", 16, "x22" ), ( "x23", 16, "x23" ) ),
+                ( ( "x24", 16, "x24"), ( "x25", 16, "x25" ), ( "x26", 16, "x26" ), ( "x27", 16, "x27" ) ),
+                ( ( "x28", 16, "x28"), ( "x29", 16, "x29" ), ( "x30", 16, "x30" ), ( "sp", 16, "sp " ) ),
+                ( ( "pc", 16, "pc "), ( "cpsr", 8, "cpsr" ), ( "cpsr", arm64_flags_list ) ) )
+
+
+arm64_registers = ( "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+        "x13", "x14", "x15", "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25",
+        "x26", "x27", "x28", "x29", "x30", "sp", "pc", "cpsr" )
+
+arm64_def = CpuDef(arm64_registers, "cpsr", arm64_lines, arm64_flags_list, "unsigned long long", "unsigned int")
 
 # previous registers value
 prev_registers = {}
@@ -127,6 +158,8 @@ def get_cpu_def(arch):
     	return i386_def
     if arch == "arm":
     	return arm_def
+    if arch == "aarch64":
+    	return arm64_def
     return None
 
 def save_registers():
@@ -151,10 +184,14 @@ def save_registers():
     prev_registers = curr_registers
     curr_registers = {}
     
+    wide_type = janitor.typecache.cache.get_type(cpu_def.widest_register_type)
+    flags_type = janitor.typecache.cache.get_type(cpu_def.flags_type)
+
     while reg_num < reg_count:
         reg_name = reg_list[reg_num]
-        wide_type = janitor.typecache.cache.get_type(cpu_def.widest_register_type)
-        if wide_type != None:
+        if reg_name == cpu_def.flags_reg:
+            curr_registers[reg_name] = int(frame.read_register(reg_name).cast(flags_type))
+        elif wide_type != None:
             curr_registers[reg_name] = int(frame.read_register(reg_name).cast(wide_type))
         else:
             curr_registers[reg_name] = frame.read_register(reg_name)
