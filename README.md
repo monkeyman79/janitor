@@ -50,7 +50,7 @@ To install aliases, enable all features and setup fancy prompt, just type start-
 ### Registers
 ##### `info janitor registers`
 ##### alias `jar`
-Display CPU registers in low-lever debugger style with colors. At this moment the command support only i386 architecture.
+Display CPU registers in low-lever debugger style with colors. At this moment the command support only i386 and ARM architectures.
 
 ##### `info janitor cpu-flags`
 ##### alias `jaf`
@@ -152,7 +152,7 @@ Selected thread number
 ##### `${t:[attr]}`
 Selected thread attribute. Thread attribute can be one of: `is_valid`, `num`, `name`, `global_num`, `pid`, `lwpid`, `tid`, `is_stopped`, `is_running`, `is_exited`. Default is `is_valid`
 
-#### GDB paremeters
+#### GDB parameters
 ##### `${p:param}`
 Value of GDB parameter
 

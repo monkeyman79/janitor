@@ -310,7 +310,7 @@ class Disassemble(janitor.dump.DumpBase):
         if end_addr == None:
             height = gdb.parameter("height")
             if height != None:
-                count = gdb.parameter("height") / 2 - 2
+                count = int(height / 2) - 2
             else:
                 count = 12
             disass = arch.disassemble(start_pc = start_addr, count = count)

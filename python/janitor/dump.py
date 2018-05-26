@@ -288,7 +288,7 @@ class Dump(DumpBase):
         if end_addr == None:
             height = gdb.parameter("height")
             if height != None:
-                count = gdb.parameter("height") / 2 - 2
+                count = int(height / 2) - 2
             else:
                 count = 12
             end_addr = start_addr + count * self.BYTES_PER_LINE - 1
